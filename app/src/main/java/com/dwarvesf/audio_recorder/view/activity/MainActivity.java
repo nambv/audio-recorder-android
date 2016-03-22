@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,7 +24,6 @@ import com.dwarvesf.audio_recorder.presenter.interfaces.IMainPresenter;
 import com.dwarvesf.audio_recorder.util.Logger;
 import com.dwarvesf.audio_recorder.util.RecordConstant;
 import com.dwarvesf.audio_recorder.util.Util;
-import com.dwarvesf.audio_recorder.view.custom.MyProgress;
 import com.dwarvesf.audio_recorder.view.mvp.MainMvpView;
 
 import java.io.File;
@@ -36,7 +36,8 @@ import at.markushi.ui.CircleButton;
 public class MainActivity extends AppCompatActivity implements MainMvpView, View.OnClickListener, View.OnTouchListener, MediaPlayer.OnBufferingUpdateListener, MediaPlayer.OnCompletionListener {
 
     // Views declaration
-    MyProgress mDonutProgress;
+    ProgressBar mProgressBar;
+    TextView mRecordInstructionTextView;
     TextView mTimerTextView;
     CircleButton mRecordButton;
     SeekBar mSeekBarProgress;
@@ -86,7 +87,8 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
         mPresenter.attachView(this);
 
         // Get views by Id
-        mDonutProgress = (MyProgress) findViewById(R.id.pb_loading);
+        mProgressBar = (ProgressBar) findViewById(R.id.pb_loading);
+        mRecordInstructionTextView = (TextView) findViewById(R.id.tv_record_instruction);
         mTimerTextView = (TextView) findViewById(R.id.tv_timer);
         mRecordButton = (CircleButton) findViewById(R.id.btn_record);
         mSeekBarProgress = (SeekBar) findViewById(R.id.seek_bar);
@@ -117,6 +119,18 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
         mPlayer = new MediaPlayer();
         mPlayer.setOnBufferingUpdateListener(this);
         mPlayer.setOnCompletionListener(this);
+    }
+
+    @UiThread
+    private void showTimerTextView() {
+        mRecordInstructionTextView.setVisibility(View.GONE);
+        mTimerTextView.setVisibility(View.VISIBLE);
+    }
+
+    @UiThread
+    private void hideTimerTextView() {
+        mRecordInstructionTextView.setVisibility(View.VISIBLE);
+        mTimerTextView.setVisibility(View.GONE);
     }
 
     /**
@@ -233,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
      * Update progress bar when timer is counting
      */
     void updateProgress() {
-        mDonutProgress.setProgress((float) (mDonutProgress.getProgress() + 0.1));
+        mProgressBar.setProgress(mProgressBar.getProgress() + 1);
     }
 
     /**
@@ -241,8 +255,8 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
      */
     @UiThread
     void clearProgress() {
-        mDonutProgress.setProgress(0);
-        mDonutProgress.clearAnimation();
+        mProgressBar.setProgress(0);
+        mProgressBar.clearAnimation();
     }
 
     private String getFilePath() {
@@ -304,6 +318,9 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
             // If enough 30 second, stop it
             if (secs == 30) {
                 Logger.w("Stop recording");
+
+                // Hide timer textview
+                hideTimerTextView();
 
                 // All method relevant with event stop recording should handle in UI thread
                 stopCountUpTimer();
@@ -390,6 +407,9 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
 
+                        // Show timer textview
+                        showTimerTextView();
+
                         // Do not allow button play pause to click
                         updateButtonPlayPauseStatus(false);
 
@@ -418,6 +438,9 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
 
                         if (!mIsRecorderStopped) {
                             Logger.w("Stop recording");
+
+                            // Hide timer textview
+                            hideTimerTextView();
 
                             // Stop all current working tasks
                             stopCountUpTimer();
@@ -461,6 +484,8 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
      */
     @Override
     public void onCompletion(MediaPlayer mp) {
+
+        Logger.w("onCompletion");
 
         // Reset state media player so we can set data source again to play
         mPlayer.reset();
