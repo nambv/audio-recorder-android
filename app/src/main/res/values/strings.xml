@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Audio Recorder</string>
+    <string name="time_format" formatted="false">%02d:%02d</string>
+    <string name="duration">00:%02d</string>
+    <string name="uploading_record">Uploading record…</string>
+    <string name="upload_record_done">Record has been uploaded</string>
+    <string name="cant_connect_to_server">Can\'t connect to server</string>
+    <string name="server_not_found">Server not found</string>
+    <string name="upload_problem">Your file can\'t upload to server. Please check and try again</string>
+</resources>
