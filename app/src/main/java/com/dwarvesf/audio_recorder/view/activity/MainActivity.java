@@ -65,14 +65,16 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
     int secs = 0;
     int mins = 0;
     int milliseconds = 0;
-    int mediaFileLengthInMilliseconds; // this value contains the song duration in milliseconds. Look at getDuration() method in MediaPlayer class
+    int mCurrentLenght = 0;
+    int mediaFileLengthInMilliseconds = 0; // this value contains the song duration in milliseconds. Look at getDuration() method in MediaPlayer class
     Handler mHandler = new Handler();
 
     private String mFilePath;
-    private String url = "http://192.168.31.150:8081/v1/file/";
 
     // Use toast to alert message
     private Toast mToast;
+
+    private String mUrl;
 
     /**
      * Called when the activity is first created.
@@ -345,7 +347,17 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
     public void playAudioAfterUploaded(int fileId) {
 
         // Set fileId to url
-        url += fileId;
+        mUrl = "http://161.202.181.42:8081/v1/file/" + fileId;
+
+        try {
+            // Set audio type is stream music and set data source by URL file
+            mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mPlayer.setDataSource(mUrl);
+
+            mPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // Update status button is 'true', so we can click to play audio file from URL
         updateButtonPlayPauseStatus(true);
@@ -371,31 +383,27 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
     public void onClick(View v) {
         if (v.getId() == R.id.btn_play_pause) {
 
-            // Prevent click again
-            updateButtonPlayPauseStatus(false);
+//            // Prevent click again
+//            updateButtonPlayPauseStatus(false);
+
+            // Set the audio file length in milliseconds from URL
+            mediaFileLengthInMilliseconds = mPlayer.getDuration();
+            int seconds = mediaFileLengthInMilliseconds / 1000;
+            seconds = seconds % 60;
+            mDurationTextView.setText(getString(R.string.duration, seconds));
 
             // Play stream music
-            try {
-
-                // Set audio type is stream music and set data source by URL file
-                mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                mPlayer.setDataSource(url);
-
-                mPlayer.prepare();
-
-                // Set the audio file length in milliseconds from URL
-                mediaFileLengthInMilliseconds = mPlayer.getDuration();
-                int seconds = mediaFileLengthInMilliseconds / 1000;
-                seconds = seconds % 60;
-                mDurationTextView.setText(getString(R.string.duration, seconds));
-
+            if (!mPlayer.isPlaying()) {
                 mPlayer.start();
-
-                primarySeekBarProgressUpdater();
-
-            } catch (IOException e) {
-                e.printStackTrace();
+                mPlayer.seekTo(mCurrentLenght);
+                mPlayPauseButton.setImageResource(R.drawable.ic_pause);
+            } else {
+                mPlayer.pause();
+                mCurrentLenght = mPlayer.getCurrentPosition();
+                mPlayPauseButton.setImageResource(R.drawable.ic_play);
             }
+
+            primarySeekBarProgressUpdater();
         }
     }
 
@@ -406,6 +414,15 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
             case R.id.btn_record:
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+
+                        // Stop media player before recording
+                        if (mPlayer.isPlaying()) {
+                            mPlayer.stop();
+                            mPlayer.reset();
+
+                            updateButtonPlayPauseStatus(false);
+                            clearProgress();
+                        }
 
                         // Show timer textview
                         showTimerTextView();
@@ -460,6 +477,7 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
                 if (mPlayer.isPlaying()) {
                     SeekBar sb = (SeekBar) v;
                     int playPositionInMilliSeconds = (mediaFileLengthInMilliseconds / 100) * sb.getProgress();
+                    mPlayer.start();
                     mPlayer.seekTo(playPositionInMilliSeconds);
                 }
                 break;
@@ -470,6 +488,7 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
 
     /**
      * Method which updates the SeekBar secondary progress by current song loading from URL position
+     *
      * @param mp
      * @param percent
      */
@@ -480,6 +499,7 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
 
     /**
      * MediaPlayer onCompletion event handler. Method which calls then song playing is complete
+     *
      * @param mp
      */
     @Override
@@ -489,6 +509,7 @@ public class MainActivity extends AppCompatActivity implements MainMvpView, View
 
         // Reset state media player so we can set data source again to play
         mPlayer.reset();
+        mCurrentLenght = 0;
         mDurationTextView.setText("00:00");
 
         // Set button clickable

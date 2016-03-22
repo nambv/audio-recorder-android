@@ -96,6 +96,7 @@ public class MainPresenter implements IMainPresenter {
                             if (!result.isJsonNull()) {
                                 // Set fileId if upload file successfully
                                 fileId = result.get("file").getAsJsonObject().get("ID").getAsInt();
+                                Logger.w("fileId: " + fileId);
                             }
                         }
                     });

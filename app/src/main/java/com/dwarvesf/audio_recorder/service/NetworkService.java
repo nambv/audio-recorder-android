@@ -31,7 +31,7 @@ public interface NetworkService {
             Retrofit retrofit = new Retrofit.Builder()
                     .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create(gson))
-                    .baseUrl("http://192.168.31.150:8081")
+                    .baseUrl("http://161.202.181.42:8081")
                     .client(client)
                     .build();
             return retrofit.create(NetworkService.class);
